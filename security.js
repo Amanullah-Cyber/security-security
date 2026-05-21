@@ -1,0 +1,85 @@
+// --- User State Management ---
+let user = {
+    id: "user123",
+    strikeCount: 0,
+    isBanned: false,
+    banExpiry: null
+};
+
+// --- Main System Control ---
+function processInput(inputData, type) {
+    // Check if the user is currently banned
+    if (!checkAccess()) {
+        displayStatus("❌ ACCESS DENIED: YOU ARE BANNED", "#ff0055");
+        return;
+    }
+
+    // Run filters to check if the input is safe
+    if (runPowerfulFilters(inputData)) {
+        displayStatus("✅ SAFE: " + type + " IS VALID", "#00ff9d");
+    } else {
+        displayStatus("❌ THREAT DETECTED: INVALID INPUT", "#ff0055");
+        handleStrike();
+    }
+}
+
+// --- Powerful Filter System ---
+function runPowerfulFilters(data) {
+    // Check if input is empty or too short
+    if (!data || data.length < 5) return false;
+
+    // Check for forbidden keywords
+    const forbiddenWords = ["malware", "phishing", "spam", "virus", "badlink"];
+    for (let word of forbiddenWords) {
+        if (data.toLowerCase().includes(word)) return false;
+    }
+
+    // Prevent SQL or Script Injection
+    const dangerousChars = ["<", ">", ";", "--", "DROP", "SELECT"];
+    for (let char of dangerousChars) {
+        if (data.toUpperCase().includes(char)) return false;
+    }
+
+    // Check for URL patterns
+    const urlPattern = /(http|https):\/\/[^\s]+/;
+    if (urlPattern.test(data)) return false;
+
+    return true;
+}
+
+// --- Visual Feedback System ---
+function displayStatus(message, color) {
+    let outputElement = document.getElementById("status-display");
+    if (outputElement) {
+        outputElement.innerHTML = `<h2 style="color:${color}; font-family: monospace;">${message}</h2>`;
+    }
+}
+
+// --- Security & Moderation ---
+function handleStrike() {
+    user.strikeCount++;
+    // Ban user if strikes reach 4
+    if (user.strikeCount >= 4) {
+        applyBan();
+    }
+}
+
+function applyBan() {
+    user.isBanned = true;
+    user.banExpiry = new Date().getTime() + (5 * 24 * 60 * 60 * 1000); // 5-day ban
+    displayStatus("🚫 ACCOUNT BANNED FOR 5 DAYS", "#ff0055");
+}
+
+function checkAccess() {
+    if (user.isBanned) {
+        let now = new Date().getTime();
+        // Automatically unban if time has expired
+        if (now > user.banExpiry) {
+            user.isBanned = false;
+            user.strikeCount = 0;
+            return true;
+        }
+        return false;
+    }
+    return true;
+}
